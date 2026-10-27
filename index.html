@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevDoctor — assistente de depuração de APIs</title>
+<meta name="description" content="Testa APIs automaticamente, identifica erros comuns e explica como corrigi-los. Open source, TypeScript, CLI + dashboard.">
+<style>
+:root{color-scheme:light dark;--bg:#f6f8f7;--fg:#12201e;--mut:#556763;--ln:#d3dcda;--card:#fff;--brand:#0b6b63;--err:#b42318;--warn:#b54708;--info:#175cd3;--ok:#067647;--term:#0f1a19;--termfg:#d9e8e5}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1514;--fg:#e4eeec;--mut:#92a5a1;--ln:#243533;--card:#142120;--brand:#3dc2b3;--err:#ff7b6e;--warn:#f0a35a;--info:#7cacff;--ok:#4cd495;--term:#081110}}
+*{box-sizing:border-box}html{scroll-padding-top:1rem}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+.w{max-width:1040px;margin:auto;padding:0 1.25rem}
+h1,h2{font-family:Charter,"Iowan Old Style",Georgia,serif;line-height:1.15;margin:0}
+a{color:var(--brand)}a:focus-visible,button:focus-visible,textarea:focus-visible,label:focus-within{outline:3px solid var(--brand);outline-offset:2px}
+nav{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 0}
+nav b{font-family:Charter,Georgia,serif;font-size:1.25rem}nav a{margin-left:1.25rem;text-decoration:none}
+.hero{display:grid;grid-template-columns:1fr 1.15fr;gap:2.5rem;align-items:center;padding:2.5rem 0 4rem}
+.hero h1{font-size:clamp(2.2rem,5vw,3.4rem)}
+.hero p{color:var(--mut);max-width:34ch}
+.install{display:inline-block;background:var(--term);color:var(--termfg);padding:.7rem 1rem;border-radius:6px;font:14px ui-monospace,Menlo,monospace}
+.term{background:var(--term);color:var(--termfg);border-radius:8px;padding:1.1rem 1.2rem;font:13px/1.65 ui-monospace,Menlo,monospace;overflow-x:auto;white-space:pre;border-left:5px solid var(--err)}
+.e{color:#ff7b6e}.a{color:#f0a35a}.g{color:#4cd495}.d{color:#8aa09c}
+section{padding:3rem 0;border-top:1px solid var(--ln)}
+h2{font-size:1.9rem;margin-bottom:1.25rem}
+dl{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem 3rem;margin:0}
+dt{font-weight:700}dd{margin:.15rem 0 0;color:var(--mut)}
+pre{background:var(--term);color:var(--termfg);padding:1rem 1.2rem;border-radius:8px;overflow-x:auto;font:14px/1.6 ui-monospace,Menlo,monospace;margin:.75rem 0}
+.tools{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}
+button,.btn{font:inherit;font-size:15px;background:var(--brand);color:var(--bg);border:0;border-radius:6px;padding:.55rem 1rem;cursor:pointer}
+button.alt,.btn.alt{background:transparent;color:var(--brand);border:1px solid var(--brand)}
+.drop{display:block}textarea{width:100%;min-height:130px;background:var(--card);color:var(--fg);border:1px dashed var(--mut);border-radius:8px;padding:.8rem;font:13px/1.5 ui-monospace,Menlo,monospace}
+.rep{background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:1.25rem;margin-top:1.25rem}
+.rep h3{margin:0;font-size:1.15rem}.meta{color:var(--mut);font:13px ui-monospace,Menlo,monospace;word-break:break-all;margin:.2rem 0}
+.cnt{display:flex;gap:1.25rem;margin:.6rem 0;font-weight:600}
+.f{border-left:4px solid;padding:.35rem .8rem;margin:.7rem 0}.f p{margin:.2rem 0;color:var(--mut);font-size:15px}.f ol{margin:.2rem 0 0;padding-left:1.2rem;font-size:15px}
+.msg{color:var(--err);margin-top:.75rem}
+footer{padding:2rem 0 3rem;color:var(--mut);border-top:1px solid var(--ln);font-size:15px}
+@media(max-width:760px){.hero,dl{grid-template-columns:1fr}.hero{padding-top:1rem}}
+</style>
+</head>
+<body>
+<div class="w">
+<nav><b>DevDoctor</b><span><a href="#verifica">O que verifica</a><a href="#comecar">Começar</a><a href="#dashboard">Dashboard</a></span></nav>
+
+<header class="hero">
+  <div>
+    <h1>Sua API falhou. Descubra por quê.</h1>
+    <p>O DevDoctor testa o endpoint, aponta o problema, a causa provável e o que fazer a seguir. Roda no seu terminal, sem conta e sem plataforma paga.</p>
+    <span class="install">npm install &amp;&amp; npm run build</span>
+  </div>
+  <div class="term" role="img" aria-label="Exemplo de diagnóstico no terminal">$ devdoctor check https://api.exemplo.com/users
+<span class="d">GET /users  →  500 · 1840 ms · 412 B</span>
+
+<span class="e">✖ ERRO</span>  Erro interno do servidor (500)
+   Causa: exceção não tratada no servidor.
+   1. Veja os logs no horário da requisição.
+   2. Reproduza com o mesmo payload localmente.
+<span class="a">▲ AVISO</span> Resposta lenta: 1840 ms
+<span class="a">▲ AVISO</span> Possível stack trace exposto
+<span class="g">✔ OK</span>    JSON válido</div>
+</header>
+
+<section id="verifica">
+  <h2>O que ele verifica</h2>
+  <dl>
+    <div><dt>Diagnóstico automático</dt><dd>Erros HTTP, timeouts, conexão recusada, DNS e certificados HTTPS inválidos.</dd></div>
+    <div><dt>Teste de endpoints</dt><dd>Status, tempo de resposta, JSON válido e status esperado.</dd></div>
+    <div><dt>Segurança básica</dt><dd>CORS mal configurado, stack traces e credenciais na resposta, cabeçalhos que revelam tecnologia. Análise passiva: nenhum ataque é realizado.</dd></div>
+    <div><dt>Relatório compartilhável</dt><dd>Texto no terminal, JSON para automação ou HTML autônomo para enviar à equipe.</dd></div>
+  </dl>
+</section>
+
+<section id="comecar">
+  <h2>Comece em um minuto</h2>
+  <pre>git clone https://github.com/seu-usuario/devdoctor.git
+cd devdoctor &amp;&amp; npm install &amp;&amp; npm run build
+
+node dist/cli.js check https://api.exemplo.com/users
+node dist/cli.js check https://api.exemplo.com/users --origin http://localhost:5173
+node dist/cli.js check https://api.exemplo.com/users --format json -o relatorio.json
+node dist/cli.js run   # vários endpoints a partir de devdoctor.config.json</pre>
+  <p>Retorna código de saída 1 quando encontra erros, então funciona também no CI. Detalhes de todas as opções estão no <a href="README.md">README</a>.</p>
+</section>
+
+<section id="dashboard">
+  <h2>Dashboard</h2>
+  <p>Carregue um relatório gerado com <code>--format json</code>. Tudo roda no seu navegador; nenhum dado é enviado.</p>
+  <div class="tools">
+    <label class="btn alt" tabindex="-1">Escolher arquivo JSON<input id="file" type="file" accept=".json,application/json" hidden></label>
+    <button id="sample" class="alt" type="button">Ver exemplo</button>
+    <button id="render" type="button">Mostrar relatório</button>
+  </div>
+  <label class="drop"><span class="meta">Ou cole o JSON aqui</span>
+  <textarea id="json" spellcheck="false" placeholder='{"tool":"devdoctor", ...}'></textarea></label>
+  <div id="msg" class="msg" role="alert"></div>
+  <div id="out" aria-live="polite"></div>
+</section>
+
+<footer>DevDoctor · código aberto sob licença MIT · use apenas em APIs suas ou com autorização.</footer>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const L={error:"ERRO",warning:"AVISO",info:"INFO",ok:"OK"},I={error:"✖",warning:"▲",info:"ℹ",ok:"✔"},O=["error","warning","info","ok"];
+const kb=n=>n<1024?n+" B":(n/1024).toFixed(1)+" KB";
+function card(r){
+  const p=r.probe||{},s=r.summary||{};
+  const fs=[...(r.findings||[])].sort((a,b)=>O.indexOf(a.severity)-O.indexOf(b.severity)).map(f=>`
+   <div class="f" style="border-color:var(--${f.severity})"><b style="color:var(--${f.severity})">${I[f.severity]} ${L[f.severity]}</b> ${esc(f.title)}
+   ${f.severity!=="ok"?`<p>${esc(f.cause)}</p>${f.fix&&f.fix.length?`<ol>${f.fix.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}`:""}</div>`).join("");
+  return `<article class="rep"><h3>${esc(r.name||r.target)}</h3>
+   <p class="meta">${esc(r.method)} ${esc(r.target)} → ${esc(p.status??p.errorCode)} · ${esc(p.durationMs)} ms · ${kb(p.bodySize||0)}</p>
+   <div class="cnt"><span style="color:var(--err)">${s.error||0} erro(s)</span><span style="color:var(--warn)">${s.warning||0} aviso(s)</span><span style="color:var(--info)">${s.info||0} info</span><span style="color:var(--ok)">${s.ok||0} ok</span></div>${fs}</article>`;
+}
+function show(text){
+  $("#msg").textContent="";
+  try{
+    const d=JSON.parse(text),rs=Array.isArray(d)?d:[d];
+    if(!rs.every(r=>r&&r.tool==="devdoctor"&&Array.isArray(r.findings)))throw new Error("O JSON não parece ser um relatório do DevDoctor. Gere um com --format json.");
+    $("#out").innerHTML=rs.map(card).join("");
+  }catch(e){$("#out").innerHTML="";$("#msg").textContent="Não foi possível mostrar o relatório: "+e.message;}
+}
+const SAMPLE={tool:"devdoctor",version:"0.1.0",generatedAt:"2026-10-27T12:00:00Z",target:"https://api.exemplo.com/users",method:"GET",
+ probe:{status:500,statusText:"Internal Server Error",durationMs:1840,bodySize:412},summary:{error:1,warning:2,info:0,ok:1},
+ findings:[
+  {severity:"error",title:"Erro interno do servidor (500)",cause:"Exceção não tratada no servidor: bug, banco indisponível, variável de ambiente ausente ou dado inesperado.",fix:["Veja os logs do servidor no horário da requisição.","Reproduza com o mesmo payload em ambiente local.","Verifique conexão com banco/serviços externos."]},
+  {severity:"warning",title:"Resposta lenta: 1840 ms",cause:"O tempo passou do limite de 1000 ms.",fix:["Procure queries sem índice e consultas N+1.","Use cache para dados que mudam pouco."]},
+  {severity:"warning",title:"Possível stack trace ou erro interno exposto",cause:"O corpo parece conter detalhes internos (arquivos, linhas, SQL).",fix:["Em produção, retorne mensagens genéricas e registre o detalhe só nos logs."]},
+  {severity:"ok",title:"JSON válido",cause:"",fix:[]}]};
+$("#render").onclick=()=>show($("#json").value);
+$("#sample").onclick=()=>{$("#json").value=JSON.stringify(SAMPLE,null,2);show($("#json").value);};
+$("#file").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{$("#json").value=t;show(t);});};
+</script>
+</body>
+</html>
